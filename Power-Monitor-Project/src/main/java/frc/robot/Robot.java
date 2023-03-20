@@ -8,6 +8,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
+import edu.wpi.first.wpilibj.PowerDistribution;
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -20,6 +22,9 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  PowerDistribution kPDP = new PowerDistribution(0, PowerDistribution.ModuleType.kCTRE);
+
+  double[] kCurrent = {0.0,0.0,0.0,0.0}; double kVoltage; double kTemp; double kTotalCurrent; double kTotalPower; double kTotalEnergy;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -78,7 +83,29 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    kVoltage = kPDP.getVoltage();
+    kTemp = kPDP.getTemperature();
+    kTotalCurrent = kPDP.getTotalCurrent();
+    kTotalEnergy = kPDP.getTotalEnergy();
+    kTotalPower = kPDP.getTotalPower();
+    
+    for(int i = 0; i > 3; i++) {
+      kCurrent[i] = kPDP.getCurrent(i);
+      System.out.println("Current drawn by specific channel - Current Channel [" + i + "] : (" + kCurrent[i] + " A)");
+    } 
+
+    System.out.println("\nVoltage of battery to PDP : (" + kVoltage + " Volts)");
+    System.out.println("\nTemperature of PDP : (" + kTemp + " Celsius)");
+    System.out.println("\nTotal Current drawn by PDP : (" + kTotalCurrent + " A)");
+    System.out.println("\nTotal Energy in Watts : (" + kTotalEnergy + " W)");
+    System.out.println("\nTotal Joules : (" + kTotalPower + " J)");
+
+    try {
+      Thread.sleep(1000);
+    } catch(InterruptedException e) {}
+    System.out.printf("\033[H\033[2J");
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
