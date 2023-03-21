@@ -5,6 +5,9 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -24,6 +27,18 @@ public class Robot extends TimedRobot {
 
   PowerDistribution kPDP = new PowerDistribution(0, PowerDistribution.ModuleType.kCTRE);
 
+  Spark driveMotor1 = new Spark(0);
+  Spark driveMotor2 = new Spark(1);
+  Spark driveMotor3 = new Spark(2);
+  Spark driveMotor4 = new Spark(3);
+
+  MotorControllerGroup leftDriveMotors = new MotorControllerGroup(driveMotor1, driveMotor2);
+  MotorControllerGroup rightDriveMotors = new MotorControllerGroup(driveMotor3, driveMotor4);
+
+  DifferentialDrive driveTrain = new DifferentialDrive(leftDriveMotors, rightDriveMotors);
+
+
+
   double[] kCurrent = {0.0,0.0,0.0,0.0}; double kVoltage; double kTemp; double kTotalCurrent; double kTotalPower; double kTotalEnergy;
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -34,6 +49,8 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+    SmartDashboard.putData("Test Date", m_chooser);
+    SmartDashboard.putString("Test String", "Value");
   }
 
   /**
@@ -79,11 +96,17 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    int j = 0;
+    double[] voltsList = new double[10000];
+    double meanVolts;
+    double upperQuartileVolts;
+    double lowerQuartileVolts;
+    double lowVolts = 12;
+    double highVolts = 0;
+    double total = 0;
 
-  /** This function is called periodically during operator control. */
-  @Override
-  public void teleopPeriodic() {
+    do{
     kVoltage = kPDP.getVoltage();
     kTemp = kPDP.getTemperature();
     kTotalCurrent = kPDP.getTotalCurrent();
@@ -95,6 +118,19 @@ public class Robot extends TimedRobot {
       System.out.println("Current drawn by specific channel - Current Channel [" + i + "] : (" + kCurrent[i] + " A)");
     } 
 
+    if(kVoltage > highVolts) {
+      highVolts = kVoltage;
+    } else if (kVoltage < lowVolts) {
+      lowVolts = kVoltage;
+    }
+
+    voltsList[j] = kTotalCurrent;
+
+    total = total + kVoltage;
+    meanVolts = total / j;
+
+
+
     System.out.println("\nVoltage of battery to PDP : (" + kVoltage + " Volts)");
     System.out.println("\nTemperature of PDP : (" + kTemp + " Celsius)");
     System.out.println("\nTotal Current drawn by PDP : (" + kTotalCurrent + " A)");
@@ -105,6 +141,36 @@ public class Robot extends TimedRobot {
       Thread.sleep(1000);
     } catch(InterruptedException e) {}
     System.out.printf("\033[H\033[2J");
+    j++;
+  }
+    while(j != 10000);
+
+    int k;
+    for(k = 1; k < 1000; k++) {
+      double l = voltsList[k];
+      double m = voltsList[k - 1];
+      if(m > l) {
+        double temp = m;
+        m = l;
+        l = temp;
+      }
+    }
+    
+    upperQuartileVolts = voltsList[7500];
+    lowerQuartileVolts = voltsList[2500];
+    
+    System.out.printf("Mean volts: %f\n", meanVolts);
+    System.out.printf("Upper Quartile Volts: %f\n", upperQuartileVolts);
+    System.out.printf("Lower Quartile volts: %f\n", lowerQuartileVolts);
+    System.out.printf("High volts: %f\n", highVolts);
+    System.out.printf("Low volts: %f\n", lowVolts);
+
+  }
+
+  /** This function is called periodically during operator control. */
+  @Override
+  public void teleopPeriodic() {
+    
   }
 
   /** This function is called once when the robot is disabled. */
